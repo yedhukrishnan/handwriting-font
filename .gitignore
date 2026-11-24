@@ -4,14 +4,8 @@ __pycache__/
 *.pyc
 .DS_Store
 
-# ---- Private journal content: kept local only ----
-# absolute paths to the original photos
-data/sources.json
-# full binarized journal pages (readable)
-data/pages/
-# OCR text of the journal pages
-data/ocr/
-# review sheets / region previews contain whole lines of journal text
-out/review/
-# preview page with transcribed journal entries
-out/journal.html
+# Your handwriting project, if you use the repo folder itself as the project
+# (or keep it elsewhere with --project ~/my-font). Never committed here.
+data/
+out/
+settings.json

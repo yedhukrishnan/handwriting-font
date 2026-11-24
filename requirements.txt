@@ -4,3 +4,4 @@ pillow
 fonttools
 scikit-image
 skia-pathops
+brotli

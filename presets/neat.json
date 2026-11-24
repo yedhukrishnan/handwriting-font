@@ -1,0 +1,16 @@
+{
+  "outdir": "out/neat",
+  "neat": true,
+  "lighten": 0,
+  "cap_width": 0.85,
+  "cap_lighten": 0,
+  "stroke_target": 76,
+  "stroke_strength": 0.85,
+  "slant_strength": 0.7,
+  "slant_cap_deg": 12,
+  "contour_smooth": 0.018,
+  "prefer_copy": "cleanest",
+  "optical_sb": true,
+  "overshoot": 10,
+  "name_suffix": " Neat"
+}

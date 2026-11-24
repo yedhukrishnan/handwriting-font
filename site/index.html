@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Handwriting Font — turn your handwriting into a font</title>
+<meta name="description" content="Photograph a page of your handwriting and turn it into a real TrueType font. Open source, runs on your own computer.">
+<style>
+  @font-face { font-family: "Example Hand"; src: url("assets/example-handwriting.woff2") format("woff2"); font-display: swap; }
+  :root {
+    --ink: #1f2f3a; --blue: #2b4a8b; --red: #d9442e; --paper: #fbfaf4; --grid: #e2e5e2;
+    --hl: rgba(247, 200, 70, .65); --hand: "Example Hand", "Marker Felt", "Comic Sans MS", cursive;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; color: var(--ink); font-family: var(--hand); font-size: 21px; line-height: 1.55;
+    background-color: var(--paper);
+    background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 28px 28px;
+  }
+  a { color: var(--blue); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 28px; position: relative; }
+  .margin-line { position: fixed; top: 0; bottom: 0; left: max(24px, calc(50% - 600px)); width: 2px; background: rgba(217,68,46,.35); pointer-events: none; }
+  mark { background: linear-gradient(transparent 42%, var(--hl) 42%, var(--hl) 90%, transparent 90%); color: inherit; padding: 0 .1em; }
+  .u { text-decoration: underline; text-decoration-color: var(--red); text-decoration-thickness: 2px; text-underline-offset: 5px; }
+  .date { display: inline-block; border-bottom: 2px solid var(--ink); margin-bottom: .3em; }
+  .tag { border: 2px solid var(--ink); padding: 0 .3em; font-size: .75em; white-space: nowrap; }
+
+  nav { display: flex; justify-content: space-between; align-items: center; padding: 22px 0; }
+  nav .logo { font-size: 26px; }
+  nav .links a { margin-left: 22px; text-decoration: none; color: var(--ink); }
+  nav .links a:hover { text-decoration: underline; text-decoration-color: var(--red); }
+
+  .hero { padding: 40px 0 30px; display: grid; grid-template-columns: 1.3fr 1fr; gap: 40px; align-items: center; }
+  .hero h1 { font-size: 74px; line-height: 1.05; margin: 0 0 16px; font-weight: normal; }
+  .hero p { font-size: 25px; margin: 0 0 22px; max-width: 32ch; }
+  .btn { display: inline-block; font: inherit; color: var(--ink); text-decoration: none; border: 2.5px solid var(--ink);
+         border-radius: 10px 14px 9px 13px; padding: 6px 18px; margin-right: 12px; background: #fff; box-shadow: 3px 4px 0 var(--ink); }
+  .btn:hover { transform: translate(1px, 1px); box-shadow: 2px 3px 0 var(--ink); }
+  .btn.primary { background: #fde68a; }
+  .sticky { background: #fff4b8; padding: 22px 24px; transform: rotate(2deg); box-shadow: 0 10px 22px rgba(0,0,0,.12); font-size: 22px; }
+  .sticky.blue { background: #dbeafe; transform: rotate(-1.5deg); }
+  .sticky big { font-size: 42px; display: block; line-height: 1.1; margin-bottom: 4px; }
+
+  section { padding: 46px 0; }
+  h2 { font-size: 40px; font-weight: normal; margin: 0 0 6px; display: flex; justify-content: space-between; align-items: baseline; gap: 20px; }
+  .lead { font-size: 23px; max-width: 48ch; }
+
+  .tester { background: #fff; border: 2.5px solid var(--ink); border-radius: 12px 16px 12px 18px; padding: 18px 22px; box-shadow: 4px 5px 0 var(--ink); }
+  .tester textarea { width: 100%; border: 0; outline: 0; resize: vertical; background: transparent; color: var(--ink);
+                     font-family: var(--hand); font-size: var(--ts, 40px); line-height: 1.35; min-height: 2.8em; }
+  .tester .row { display: flex; gap: 18px; align-items: center; font-size: 17px; border-top: 2px dashed var(--grid); padding-top: 8px; margin-top: 6px; }
+  .charset { font-size: 34px; letter-spacing: .08em; word-break: break-all; margin-top: 18px; }
+  .aside { font-size: 18px; color: #4b5b66; margin-top: 10px; }
+
+  /* make yours */
+  .make { list-style: none; padding: 0; margin: 26px 0 0; counter-reset: step; display: grid; gap: 26px; }
+  .make > li { display: grid; grid-template-columns: 1fr 1.25fr; gap: 28px; align-items: start; }
+  .make h3 { font-size: 30px; font-weight: normal; margin: 0 0 4px; display: flex; gap: 14px; align-items: center; }
+  .make h3 .n { width: 40px; height: 40px; border: 2.5px solid var(--ink); border-radius: 50%; display: grid; place-items: center; font-size: 22px; background: #fff; flex: none; }
+  .make p { margin: 0 0 8px 54px; font-size: 19px; }
+  .make p small { color: #4b5b66; font-size: 17px; }
+  .sheet { background: #fff; border: 2.5px solid var(--ink); border-radius: 10px; padding: 12px 16px; font-size: 22px; line-height: 1.75;
+           background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px); background-size: 24px 24px; }
+  .sheet div { letter-spacing: .32em; white-space: nowrap; overflow-x: auto; }
+  pre { font: 15px/1.6 ui-monospace, Menlo, monospace; background: #1f2f3a; color: #e7ecef; padding: 14px 18px; border-radius: 10px; overflow-x: auto; margin: 0; }
+  pre .c { color: #94a3b8; }
+
+  /* the pipeline sketch */
+  .sketch { position: relative; margin-top: 26px; }
+  .sketch svg { width: 100%; height: auto; overflow: visible; }
+  .sketch text { font-family: var(--hand); fill: var(--ink); }
+  .box { fill: #fff; stroke: var(--ink); stroke-width: 2.5; }
+  .box.data { fill: #e0ecff; }
+  .box.neat { fill: #fde68a; }
+  .arrow { fill: none; stroke: var(--ink); stroke-width: 2.5; stroke-linecap: round; }
+  .legend { display: flex; gap: 24px; font-size: 17px; margin-top: 6px; flex-wrap: wrap; }
+  .legend i { display: inline-block; width: 18px; height: 14px; border: 2px solid var(--ink); vertical-align: -1px; margin-right: 6px; }
+
+  .steps { list-style: none; padding: 0; margin: 26px 0 0; display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px 40px; }
+  .steps li { padding-left: 46px; position: relative; }
+  .steps li .n { position: absolute; left: 0; top: -2px; width: 34px; height: 34px; border: 2.5px solid var(--ink); border-radius: 50%;
+                 display: grid; place-items: center; font-size: 19px; background: #fff; }
+  .steps li small { display: block; font-size: 18px; color: #4b5b66; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 34px; margin-top: 18px; }
+  .card { background: #fff; border: 2.5px solid var(--ink); border-radius: 14px 10px 16px 12px; padding: 18px 22px; }
+  .card h3 { font-size: 27px; font-weight: normal; margin: 0 0 6px; }
+  .card ul { list-style: none; padding: 0; margin: 0; }
+  .card li::before { content: "- "; }
+
+  footer { padding: 40px 0 60px; font-size: 19px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; }
+  @media (max-width: 860px) {
+    .hero, .two, .steps, .make > li { grid-template-columns: 1fr; }
+    .hero h1 { font-size: 54px; }
+    .margin-line { display: none; }
+    .make p { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+<div class="margin-line"></div>
+<div class="wrap">
+  <nav>
+    <span class="logo">Handwriting Font</span>
+    <span class="links"><a href="#try">try it</a><a href="#make">make yours</a><a href="#how">how it works</a><a href="https://github.com/yedhukrishnan/handwriting-font">github</a></span>
+  </nav>
+
+  <header class="hero">
+    <div>
+      <div class="date">your handwriting → a font</div>
+      <h1>A Font made from <mark>Handwriting</mark></h1>
+      <p>Write a page of letters, take a photo, and get a real <span class="u">TrueType font</span> you can type with. This page is set in one.</p>
+      <a class="btn primary" href="#make">Make yours</a>
+      <a class="btn" href="https://github.com/yedhukrishnan/handwriting-font">View source</a>
+    </div>
+    <div>
+      <div class="sticky"><big>1 photo → 1 font</big>One sample sheet gives you A–Z, a–z, 0–9, punctuation and symbols: 92 characters.</div>
+      <div class="sticky blue" style="margin-top:22px"><big>Runs on your computer</big>Your pages are processed locally. Nothing is uploaded anywhere.</div>
+    </div>
+  </header>
+
+  <section id="try">
+    <h2>Try it <span class="tag">LIVE</span></h2>
+    <div class="tester">
+      <textarea id="t" spellcheck="false">Your handwriting could look like this. Type anything!</textarea>
+      <div class="row"><span>size</span><input type="range" id="ts" min="20" max="90" value="40" aria-label="text size"></div>
+    </div>
+    <div class="charset">ABCDEFGHIJKLMNOPQRSTUVWXYZ abcdefghijklmnopqrstuvwxyz 0123456789 .,:;!?'"-()[]{}/\|@#$%&amp;*+=^~` ₹</div>
+    <p class="aside">The example font on this page was made with this tool from one person's notebook pages and a single sample sheet.</p>
+  </section>
+
+  <section id="make">
+    <h2>Make your own <span class="tag">4 STEPS</span></h2>
+    <p class="lead">You need a pen, paper, a phone camera and a Mac or Linux computer with Python 3.</p>
+    <ol class="make">
+      <li>
+        <div><h3><span class="n">1</span>Set up</h3><p>Get the tool and its dependencies.<br><small>On Linux, install tesseract and imagemagick with your package manager.</small></p></div>
+<pre>git clone https://github.com/yedhukrishnan/handwriting-font
+cd handwriting-font
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+brew install tesseract imagemagick</pre>
+      </li>
+      <li>
+        <div><h3><span class="n">2</span>Write a sample sheet</h3><p>Copy these rows onto paper, <mark>one character per square</mark>, in a dark pen.<br><small>Graph paper helps. Leave clear gaps and don't let characters touch. Got two pens? Write the whole block twice and the cleaner one wins.</small></p></div>
+        <div class="sheet">
+          <div>A B C D E F G H I J K L M N</div>
+          <div>O P Q R S T U V W X Y Z</div>
+          <div>a b c d e f g h i j k l m n</div>
+          <div>o p q r s t u v w x y z</div>
+          <div>0 1 2 3 4 5 6 7 8 9</div>
+          <div>. , ; : ! ? ' " - ( ) [ ]</div>
+          <div>{ } / &amp; @ # % + = * $ ^</div>
+          <div>` ~ \ | ₹</div>
+        </div>
+      </li>
+      <li>
+        <div><h3><span class="n">3</span>Photograph &amp; ingest</h3><p>Take a flat, evenly lit photo (HEIC or JPEG is fine) and feed it in.<br><small>Then open the check image: every character should be boxed with the right label. Rows that don't match are skipped and listed, never guessed.</small></p></div>
+<pre><span class="c"># your font lives in its own folder, e.g. ~/my-font</span>
+.venv/bin/python fontkit.py --project ~/my-font \
+    ingest-sheet sheet.jpg
+<span class="c"># sideways photo? add --rotate cw · block written twice? --copies 2</span>
+open ~/my-font/out/review/sheet_sheet.png</pre>
+      </li>
+      <li>
+        <div><h3><span class="n">4</span>Build &amp; install</h3><p>Build the font, then double-click the .ttf to install it.<br><small>Name your font in <span class="u">~/my-font/settings.json</span>. Add <span class="u">--preset neat</span> for a tidier, more consistent variant.</small></p></div>
+<pre>.venv/bin/python fontkit.py --project ~/my-font build
+open ~/my-font/out/MyHandwriting.ttf
+
+<span class="c"># optional: more consistent version</span>
+.venv/bin/python fontkit.py --project ~/my-font \
+    build --preset neat</pre>
+      </li>
+    </ol>
+  </section>
+
+  <section id="how">
+    <h2>How it works <span class="tag">ARCHITECTURE</span></h2>
+    <p class="lead">One Python tool, <span class="u">fontkit.py</span>, turns photos into letters and letters into a font. Every step saves its output, so you can add more handwriting later without starting over.</p>
+
+    <div class="sketch">
+      <svg viewBox="0 0 1020 430" role="img" aria-label="Pipeline: photos, clean, find letters, glyph library, pick the best, build each glyph, optional neat pass, font files">
+        <defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M1 1 L9 5 L1 9" fill="none" stroke="#1f2f3a" stroke-width="2"/></marker></defs>
+        <path class="box" d="M14 22 q90 -6 176 2 q4 50 -2 96 q-88 6 -172 -2 q-6 -46 -2 -96z"/>
+        <text x="102" y="62" text-anchor="middle" font-size="24">photos</text>
+        <text x="102" y="92" text-anchor="middle" font-size="16">sample sheet</text>
+        <text x="102" y="112" text-anchor="middle" font-size="16">+ notebook pages</text>
+
+        <path class="box" d="M262 20 q100 -4 204 4 q4 50 -2 96 q-102 6 -200 -2 q-6 -48 -2 -98z"/>
+        <text x="365" y="58" text-anchor="middle" font-size="24">clean</text>
+        <text x="365" y="86" text-anchor="middle" font-size="16">drop grid, highlighter,</text>
+        <text x="365" y="106" text-anchor="middle" font-size="16">red ink, shadows</text>
+
+        <path class="box" d="M538 18 q110 -4 214 6 q4 48 -2 96 q-108 6 -210 -4 q-6 -46 -2 -98z"/>
+        <text x="645" y="56" text-anchor="middle" font-size="24">find letters</text>
+        <text x="645" y="84" text-anchor="middle" font-size="16">sheet layout · OCR words</text>
+        <text x="645" y="104" text-anchor="middle" font-size="16">· hand labels</text>
+
+        <path class="box data" d="M822 16 q92 -2 184 6 q4 50 -2 98 q-92 6 -180 -2 q-6 -48 -2 -102z"/>
+        <text x="913" y="58" text-anchor="middle" font-size="24">glyph library</text>
+        <text x="913" y="86" text-anchor="middle" font-size="16">every labelled</text>
+        <text x="913" y="106" text-anchor="middle" font-size="16">letter image</text>
+
+        <path class="arrow" d="M194 70 q30 -8 64 0" marker-end="url(#ah)"/>
+        <path class="arrow" d="M470 70 q30 6 64 0" marker-end="url(#ah)"/>
+        <path class="arrow" d="M756 70 q30 -6 62 0" marker-end="url(#ah)"/>
+        <path class="arrow" d="M913 128 q12 60 -4 104" marker-end="url(#ah)"/>
+
+        <path class="box" d="M800 240 q104 -6 208 4 q4 56 -2 108 q-104 6 -206 -2 q-6 -54 0 -110z"/>
+        <text x="903" y="278" text-anchor="middle" font-size="24">pick the best</text>
+        <text x="903" y="306" text-anchor="middle" font-size="16">picks › sheet › labels › OCR</text>
+        <text x="903" y="326" text-anchor="middle" font-size="16">cleanest pen wins</text>
+
+        <path class="box" d="M500 238 q118 -4 236 6 q4 56 -2 108 q-118 6 -232 -4 q-6 -54 -2 -110z"/>
+        <text x="618" y="276" text-anchor="middle" font-size="24">build each glyph</text>
+        <text x="618" y="304" text-anchor="middle" font-size="16">fill dry ink · smooth outline</text>
+        <text x="618" y="324" text-anchor="middle" font-size="16">lighten · narrow capitals</text>
+
+        <path class="box neat" d="M250 240 q92 -6 186 4 q4 54 -2 106 q-92 6 -182 -2 q-6 -52 -2 -108z"/>
+        <text x="343" y="278" text-anchor="middle" font-size="24">neat (optional)</text>
+        <text x="343" y="306" text-anchor="middle" font-size="16">one pen · even weight</text>
+        <text x="343" y="326" text-anchor="middle" font-size="16">even slant</text>
+
+        <path class="box data" d="M14 242 q82 -4 168 4 q4 52 -2 104 q-82 6 -164 -2 q-6 -52 -2 -106z"/>
+        <text x="98" y="280" text-anchor="middle" font-size="24">font files</text>
+        <text x="98" y="308" text-anchor="middle" font-size="16">.ttf · .otf · .woff2</text>
+        <text x="98" y="328" text-anchor="middle" font-size="16">validated</text>
+
+        <path class="arrow" d="M796 296 q-28 8 -56 0" marker-end="url(#ah)"/>
+        <path class="arrow" d="M496 296 q-26 -8 -54 0" marker-end="url(#ah)"/>
+        <path class="arrow" d="M246 296 q-28 8 -58 0" marker-end="url(#ah)"/>
+        <text x="510" y="412" text-anchor="middle" font-size="18" fill="#4b5b66">add more pages any time: everything above is saved and re-used</text>
+      </svg>
+      <div class="legend"><span><i style="background:#fff"></i>processing step</span><span><i style="background:#e0ecff"></i>saved data</span><span><i style="background:#fde68a"></i>optional neat variant</span></div>
+    </div>
+
+    <ol class="steps">
+      <li><span class="n">1</span>Clean the photo<small>Lighting is flattened and only dark ink survives. Grid lines, yellow highlighter and red underlines disappear.</small></li>
+      <li><span class="n">2</span>Find &amp; label letters<small>A sample sheet is labelled row by row from a simple layout file. Ordinary notebook pages work too: OCR reads each word, and when its ink blobs match its letter count, every blob gets its letter.</small></li>
+      <li><span class="n">3</span>Choose the best sample<small>Specks, pin-holes and ragged edges are scored, so a drying pen loses to a clean one. Ties go to the version closest to your everyday writing.</small></li>
+      <li><span class="n">4</span>Build the outline<small>Dry-ink gaps are filled (real holes like in o and e stay), the outline is smoothed along its edge and scaled to x-height, cap height or descender.</small></li>
+      <li><span class="n">5</span>Optionally make it neat<small>Use one pen for everything and nudge stroke weight and slant toward common values, while every letter keeps its own shape.</small></li>
+      <li><span class="n">6</span>Write the font<small>fontTools assembles TrueType, OpenType and WOFF2 files, which are checked with the OpenType Sanitizer browsers use.</small></li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>Good to know <span class="tag">FAQ</span></h2>
+    <div class="two">
+      <div class="card">
+        <h3>Private by design</h3>
+        <ul>
+          <li>Everything runs <mark>on your own computer</mark></li>
+          <li>Your project folder is separate from the tool, so you choose what (if anything) to share</li>
+          <li>iPhone HEIC photos are converted with metadata stripped</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Make it better later</h3>
+        <ul>
+          <li>Add photos of ordinary notebook pages: <span class="u">ingest</span></li>
+          <li>Compare candidates for a letter: <span class="u">sheet</span></li>
+          <li>Choose a specific sample: <span class="u">pick</span></li>
+          <li>Tune weights and capital widths in <span class="u">settings.json</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <span>Written by hand, built with Python, OpenCV, Tesseract &amp; fontTools.</span>
+    <a href="https://github.com/yedhukrishnan/handwriting-font">github.com/yedhukrishnan/handwriting-font</a>
+  </footer>
+</div>
+<script>
+  const ts = document.getElementById('ts');
+  ts.oninput = () => document.documentElement.style.setProperty('--ts', ts.value + 'px');
+</script>
+</body>
+</html>
