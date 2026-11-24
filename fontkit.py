@@ -391,7 +391,7 @@ def ink_defects(sample):
     rough = per(mp) / max(per(smooth), 1)
     return frags + holes + int(round(max(0.0, rough - 1.0) / 0.05))
 
-def ranked(prefer_copy=None):
+def ranked(prefer_copy=None, keep_all=False):
     """char -> samples best-first: your pick, then sample-sheet glyphs, then manual labels,
     then OCR-extracted ones. Within sheet and OCR samples, the one closest to the median
     shape of *all* samples of that char (i.e. your everyday writing) comes first."""
@@ -409,14 +409,19 @@ def ranked(prefer_copy=None):
         sheet = [x for x in ss if x['src'] == 'sheet']
         if len(sheet) > 1:   # between pens/copies, only the cleanest strokes compete
             dfx = {x['id']: ink_defects(x) for x in sheet}; best = min(dfx.values())
-            ss = [x for x in ss if x['src'] != 'sheet' or dfx[x['id']] <= best
-                  or x['id'] == sel['pick'].get(c)]          # an explicit pick always survives
+            keep = [x for x in ss if x['src'] != 'sheet' or dfx[x['id']] <= best
+                    or x['id'] == sel['pick'].get(c)]        # an explicit pick always survives
+            # keep_all (contact sheets): show filtered copies too, after everything else
+            ss = keep + ([x for x in ss if x not in keep] if keep_all else [])
+            dropped = {x['id'] for x in ss if x not in keep}
+        else:
+            dropped = set()
         tier = {'sheet': 0, 'manual': 1, 'auto': 2}
         pick = sel['pick'].get(c)
         def copy_miss(x):
             if not prefer_copy or x['src'] != 'sheet': return 0
             return int(sheet_copy(x) != prefer_copy)
-        res[c] = sorted(ss, key=lambda s: (s['id'] != pick, tier[s['src']], copy_miss(s), dist[s['id']]))
+        res[c] = sorted(ss, key=lambda s: (s['id'] != pick, s['id'] in dropped, tier[s['src']], copy_miss(s), dist[s['id']]))
     return res
 
 def cmd_pick(a):
@@ -428,7 +433,7 @@ def cmd_reject(a):
     sel = jload(SEL, {'pick': {}, 'reject': []}); sel['reject'] = sorted(set(sel['reject']) | set(a.ids)); jsave(SEL, sel)
 
 def cmd_sheet(a):
-    R = ranked(); chars = a.chars or ''.join(sorted(R)); N, cell = 10, 120
+    R = ranked(keep_all=True); chars = a.chars or ''.join(sorted(R)); N, cell = 10, 120
     rows = []
     for c in chars:
         row = np.full((cell + 30, cell * (N + 1)), 255, np.uint8)
@@ -730,12 +735,39 @@ def build_glyph_neat(mask, bottom, top, xscale=1.0, char=None, slant_fix=0.0):
             m = (cv2.distanceTransform((1 - m).astype(np.uint8), cv2.DIST_L2, 5) <= d / 2).astype(np.uint8)
     if char is not None and char not in COUNTERS:
         m = fill_holes(m, 1.0 if char in SINGLE_STROKE else 0.22)
+    # drop crumbs left beside stroke tips by thinning; real dots (i, j, :, !) are far bigger
+    n, lab, st, _ = cv2.connectedComponentsWithStats(m, 8)
+    if n > 2:
+        m = np.isin(lab, [i for i in range(1, n) if st[i][4] >= 0.015 * m.sum()]).astype(np.uint8)
     m = condense(m, xscale)
     ys, xs = np.nonzero(m)
     upp = hu / (ys.max() - ys.min() + 1)
     y_off = bottom - (m.shape[0] - (ys.max() + 1)) * upp
     contours = mask_to_contours(m, upp, y_off, NEAT.get('contour_smooth', 0.012))
     return contours, (xs.max() + 1 - xs.min()) * upp, xs.min() * upp
+
+def drop_crumbs(contours, min_frac=0.008):
+    """Merge a glyph's outlines and drop pieces smaller than min_frac of its ink: crumbs
+    that outline smoothing can pinch off at thin stroke tips, and pin-holes. Dots and
+    counters (i, j, :, e, o) are far larger and stay."""
+    import pathops
+    from fontTools.pens.recordingPen import RecordingPen
+    path = pathops.Path(); pen = path.getPen()
+    for c in contours:
+        if len(c) < 3: continue
+        pen.moveTo(c[0]); [pen.lineTo(q) for q in c[1:]]; pen.closePath()
+    path.simplify(fix_winding=True)
+    pieces = list(path.contours)
+    total = sum(abs(pc.area) for pc in pieces) or 1
+    out = []
+    for pc in pieces:
+        if abs(pc.area) < min_frac * total: continue
+        rec = RecordingPen(); pc.draw(rec)
+        pts = [args[-1] for op, args in rec.value if op in ('moveTo', 'lineTo') and args]
+        if len(pts) >= 3:
+            area = sum(pts[j][0] * pts[j - 1][1] - pts[j - 1][0] * pts[j][1] for j in range(len(pts))) / 2
+            out.append(pts)
+    return out
 
 def synth_dot(d):
     t = np.linspace(0, 2 * np.pi, 16, endpoint=False)
@@ -784,6 +816,7 @@ def cmd_build(a):
                 ov = NEAT['overshoot']; b, t = (b - ov if b == 0 else b), t + ov
             cn, w, x_off = build_glyph_neat(load_mask(s0), b, t, CAP_WIDTH if c.isupper() else 1.0,
                                             char=c, slant_fix=slant_fix.get(c, 0.0))
+            cn = drop_crumbs(cn)
         else:
             cn, w, x_off = build_glyph(load_mask(s0), b, t, CAP_WIDTH if c.isupper() else 1.0,
                                        a.cap_lighten if c.isupper() else 0.0, char=c)

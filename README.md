@@ -35,6 +35,16 @@ brew install tesseract imagemagick        # Linux: use your package manager
    ```
    Double-click the `.ttf` to install it. Name your font in `~/my-font/settings.json`.
 
+## Let Claude do it (optional)
+
+This repo includes a [Claude Code](https://claude.com/claude-code) skill,
+[`make-handwriting-font`](.claude/skills/make-handwriting-font/SKILL.md). Open the repo in Claude
+Code and say something like *"make a font from my handwriting, here's a photo of my sample
+sheet"*. Claude runs the steps above, checks the label and specimen images, fixes bad letters
+(`pick`, `reject`, settings) and shows you before/after renders. Processing still happens on your
+computer. Claude looks at the generated images to judge them, and your project folder stays
+out of this repository.
+
 ## Projects
 
 Your handwriting lives in a **project folder**, kept separate from the tool:
