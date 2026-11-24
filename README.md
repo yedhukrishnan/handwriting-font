@@ -5,7 +5,7 @@ Turn photos of your handwriting into a real font: TrueType, OpenType and WOFF2.
 Write the characters on a sheet of paper, take a photo, and build a font you can install and type
 with. Ordinary notebook pages work too. Everything runs on your own computer.
 
-**Landing page:** [`site/index.html`](site/index.html)
+**Landing page:** [`docs/index.html`](docs/index.html) · live at https://yedhukrishnan.github.io/handwriting-font/
 
 ## Quick start
 
